@@ -4,6 +4,8 @@ Find niche products worth selling: scrape discovery sources, rank viral signal, 
 
 Stack: **FastAPI** backend + **custom web UI** (HTML/CSS/JS). No Streamlit.
 
+![Viral Product Hunter UI](docs/app-screenshot.png)
+
 ## Layout
 
 ```text

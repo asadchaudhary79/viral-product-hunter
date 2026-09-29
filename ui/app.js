@@ -51,6 +51,10 @@ const EXPORT_COLUMNS = [
 const els = {
   form: document.getElementById("hunt-form"),
   niche: document.getElementById("niche"),
+  audience: document.getElementById("audience"),
+  problem: document.getElementById("problem"),
+  briefSummary: document.getElementById("brief-summary"),
+  briefResult: document.getElementById("brief-result"),
   huntBtn: document.getElementById("hunt-btn"),
   exportBtn: document.getElementById("export-btn"),
   status: document.getElementById("status"),
@@ -67,6 +71,60 @@ const els = {
 };
 
 let latestResults = null;
+
+function selectedChoice(group, multi = false) {
+  const buttons = [...document.querySelectorAll(`.choice[data-group="${group}"]`)];
+  const active = buttons.filter((button) => button.classList.contains("is-active"));
+  if (multi) return active.map((button) => button.dataset.value).filter(Boolean);
+  return active[0]?.dataset.value ?? "";
+}
+
+function collectBrief() {
+  const priceRaw = selectedChoice("price");
+  return {
+    goal: selectedChoice("goal") || "dropshipping",
+    audience: els.audience.value.trim(),
+    price_max: priceRaw === "" ? null : Number(priceRaw),
+    problem: els.problem.value.trim(),
+    preferences: selectedChoice("prefer", true),
+    avoid: selectedChoice("avoid", true),
+  };
+}
+
+function priceSummary(priceMax) {
+  if (priceMax === null || priceMax === undefined || priceMax === "") return "any price";
+  return `under $${priceMax}`;
+}
+
+function updateBriefSummary() {
+  const niche = els.niche.value.trim() || "your niche";
+  const brief = collectBrief();
+  els.briefSummary.innerHTML = `Hunting <strong>${esc(niche)}</strong> for <strong>${esc(brief.goal)}</strong>, ${esc(priceSummary(brief.price_max))}${brief.audience ? `, for <strong>${esc(brief.audience)}</strong>` : ""}${brief.problem ? `. Problem: <strong>${esc(brief.problem)}</strong>` : ""}.`;
+}
+
+document.querySelectorAll(".choice").forEach((button) => {
+  button.addEventListener("click", () => {
+    const multi = button.dataset.multi === "true";
+    const group = button.dataset.group;
+    if (multi) {
+      button.classList.toggle("is-active");
+    } else {
+      document
+        .querySelectorAll(`.choice[data-group="${group}"]`)
+        .forEach((item) => item.classList.remove("is-active"));
+      button.classList.add("is-active");
+    }
+    updateBriefSummary();
+  });
+});
+
+["input", "change"].forEach((eventName) => {
+  els.niche.addEventListener(eventName, updateBriefSummary);
+  els.audience.addEventListener(eventName, updateBriefSummary);
+  els.problem.addEventListener(eventName, updateBriefSummary);
+});
+updateBriefSummary();
+
 
 function esc(value) {
   return String(value ?? "")
@@ -418,6 +476,16 @@ function renderDiscovery(summary) {
 
 function renderResults(results) {
   latestResults = results;
+  const brief = results.brief || {};
+  els.briefResult.innerHTML = `
+    <strong>Brief used</strong><br />
+    Niche: ${esc(results.niche || "—")} · Goal: ${esc(brief.goal || "dropshipping")} ·
+    Budget: ${esc(priceSummary(brief.price_max))}
+    ${brief.audience ? ` · Audience: ${esc(brief.audience)}` : ""}
+    ${brief.problem ? `<br />Problem: ${esc(brief.problem)}` : ""}
+    ${brief.preferences?.length ? `<br />Prefer: ${esc(brief.preferences.join(", "))}` : ""}
+    ${brief.avoid?.length ? `<br />Avoid: ${esc(brief.avoid.join(", "))}` : ""}
+  `;
   els.warnings.innerHTML = (results.ranking_warnings || [])
     .map((warning) => `<p class="warning">${esc(warning)}</p>`)
     .join("");
@@ -454,6 +522,7 @@ els.form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const niche = els.niche.value.trim();
   if (!niche) return;
+  const brief = collectBrief();
 
   clearError();
   els.results.classList.add("is-hidden");
@@ -462,26 +531,31 @@ els.form.addEventListener("submit", async (event) => {
   els.huntBtn.disabled = true;
 
   try {
-    setStatus("Discovering products…", "Scraping and normalizing discovery sources");
-    const discovery = await postJson("/discover", { niche });
+    setStatus(
+      "Discovering products for your brief…",
+      `Searching sources for ${niche} · ${brief.goal} · ${priceSummary(brief.price_max)}`,
+    );
+    const discovery = await postJson("/discover", { niche, brief });
     setStatus(
       "Sourcing Alibaba and AliExpress offers…",
-      `Initial ranking complete: ${(discovery.initial_products || []).length} candidates`,
+      `Initial ranking complete: ${(discovery.initial_products || []).length} candidates matched to your brief`,
     );
     const sourcing = await postJson("/source", {
       niche,
+      brief,
       initial_products: discovery.initial_products || [],
     });
     const results = {
       ...discovery,
       ...sourcing,
       niche,
+      brief: discovery.brief || brief,
       ranking_warnings: [
         ...(discovery.ranking_warnings || []),
         ...(sourcing.ranking_warnings || []),
       ],
     };
-    setStatus("Hunt complete", "Discovery, sourcing, and final ranking finished");
+    setStatus("Hunt complete", "Results ranked against your brief");
     renderResults(results);
   } catch (error) {
     showError(

@@ -7,6 +7,7 @@ import re
 
 import requests
 
+from app.brief import brief_as_dict, format_brief_for_prompt
 from app.config import KIMI_API_URL, KIMI_MODEL_NAME
 from app.decodo import _number
 
@@ -63,21 +64,68 @@ def build_ai_payload(api_url: str, model: str, prompt: str, temperature: float =
     return payload
 
 
-def analyze_with_ai_model(niche: str, products: list[dict]) -> tuple[list[dict], str | None]:
+def score_products_for_brief(products: list[dict], brief=None) -> list[dict]:
+    """Boost or trim local scores so the shortlist matches the seller brief."""
+    data = brief_as_dict(brief)
+    price_max = data.get("price_max")
+    try:
+        price_max = float(price_max) if price_max not in (None, "", 0, "0") else None
+    except (TypeError, ValueError):
+        price_max = None
+    preferences = " ".join(data.get("preferences") or []).lower()
+    avoid = [item.lower() for item in (data.get("avoid") or [])]
+    problem = (data.get("problem") or "").lower()
+    audience = (data.get("audience") or "").lower()
+    scored = []
+    for product in products:
+        item = dict(product)
+        score = float(item.get("viral_score") or 0)
+        price = item.get("price")
+        title = str(item.get("product") or "").lower()
+        if price_max is not None and isinstance(price, (int, float)):
+            if price <= price_max:
+                score += 8
+            elif price <= price_max * 1.25:
+                score += 2
+            else:
+                score -= 12
+        if problem and any(word in title for word in problem.split() if len(word) > 3):
+            score += 6
+        if audience and any(word in title for word in audience.split() if len(word) > 3):
+            score += 4
+        if "lightweight" in preferences or "easy to ship" in preferences:
+            if any(term in title for term in ("portable", "mini", "travel", "compact", "light")):
+                score += 5
+        if "demo" in preferences or "video" in preferences:
+            if any(term in title for term in ("gadget", "tool", "cleaner", "organizer", "light")):
+                score += 3
+        if any(term and term in title for term in avoid):
+            score -= 20
+        item["viral_score"] = max(0, min(100, round(score)))
+        scored.append(item)
+    return sorted(scored, key=lambda product: product["viral_score"], reverse=True)
+
+
+def analyze_with_ai_model(
+    niche: str, products: list[dict], brief=None
+) -> tuple[list[dict], str | None]:
     """Optionally refine product scores, falling back to local evidence scores."""
     if not products:
         return [], None
 
+    brief_block = format_brief_for_prompt(niche, brief)
     prompt = f"""
-Rank these extracted products for dropshipping without inventing information.
+Rank these extracted products for the seller brief without inventing information.
 
-Niche: {niche}
+{brief_block}
 Candidates, indexed from zero:
 {json.dumps(products, indent=2)}
 
-Consider problem solving, video demonstration, emotional appeal, shipping ease,
+Prefer products that match the selling goal, budget, audience, and problem.
+Also consider video demonstration potential, emotional appeal, shipping ease,
 competition, bundling, supplier evidence, and year-round demand. Reject unsafe,
-restricted, fragile, edible, medicinal, branded-risk, or difficult-to-ship items.
+restricted, fragile, edible, medicinal, branded-risk, or difficult-to-ship items,
+and anything the seller listed under Avoid.
 
 Return JSON only in this shape:
 {{"ranked": [{{"candidate_index": 0, "viral_score": 0, "reason": "short reason"}}]}}
@@ -292,7 +340,7 @@ def deterministic_final_ranking(products: list[dict], offers: list[dict]) -> lis
 
 
 def final_rank_products(
-    niche: str, products: list[dict], supplier_data: list[dict]
+    niche: str, products: list[dict], supplier_data: list[dict], brief=None
 ) -> tuple[list[dict], str | None]:
     """Perform a separate price-aware final ranking, with deterministic fallback."""
     normalized_products, normalized_offers = build_final_ranking_input(products, supplier_data)
@@ -300,13 +348,14 @@ def final_rank_products(
     if not products:
         return [], None
 
+    brief_block = format_brief_for_prompt(niche, brief)
     prompt = f"""
-Rank these normalized dropshipping candidates using viral potential, lowest credible
-supplier cost, evidence quality, MOQ, shipping practicality, potential margin, and
-supplier availability across Alibaba and AliExpress. Do not invent facts. Unsupported
-currencies and offers whose price_usd is null are not credible prices.
+Rank these normalized candidates using the seller brief, viral potential, lowest
+credible supplier cost, evidence quality, MOQ, shipping practicality, potential
+margin, and supplier availability across Alibaba and AliExpress. Do not invent
+facts. Unsupported currencies and offers whose price_usd is null are not credible.
 
-Niche: {niche}
+{brief_block}
 Normalized candidates: {json.dumps(normalized_products, separators=(',', ':'))}
 Normalized supplier offers: {json.dumps(normalized_offers, separators=(',', ':'))}
 

@@ -3,30 +3,25 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import quote_plus
 
+from app.brief import brief_as_dict, build_discovery_queries, price_label
 from app.config import DECODO_MAX_WORKERS
 from app.decodo import (
     extract_products,
     scrape_with_decodo_payload,
     summarize_decodo_result,
 )
-from app.ranking import analyze_with_ai_model
+from app.ranking import analyze_with_ai_model, score_products_for_brief
 
 
-def build_source_urls(niche: str) -> list[dict]:
-    """Build discovery source URLs for Google, Amazon, Reddit, TikTok Shop, and YouTube."""
-    google_queries = [
-        f"viral {niche} products",
-        f"problem solving {niche} products",
-        f"TikTok {niche} gadgets",
-        f"Amazon best selling {niche} under $50",
-        f"lightweight {niche} products easy to ship",
-        f"{niche} accessories under $50",
-    ]
-    
+def build_source_urls(niche: str, brief=None) -> list[dict]:
+    """Build discovery source URLs shaped by the seller brief."""
+    data = brief_as_dict(brief)
+    queries = build_discovery_queries(niche, data)
+    price = price_label(data.get("price_max"))
+    goal = (data.get("goal") or "dropshipping").lower()
     sources = []
-    
-    # Google searches
-    for idx, query in enumerate(google_queries, 1):
+
+    for idx, query in enumerate(queries, 1):
         sources.append({
             "source": f"Google Search {idx}",
             "payload": {
@@ -38,20 +33,21 @@ def build_source_urls(niche: str) -> list[dict]:
                 "google_results_language": "en",
             },
         })
-    
-    # Amazon search
+
+    amazon_query = f"{niche} {price}" if price != "any price" else niche
+    if "amazon" in goal:
+        amazon_query = f"best selling {niche} {price}"
     sources.append({
         "source": "Amazon Search",
         "payload": {
             "target": "amazon_search",
-            "query": f"{niche} under $50",
+            "query": amazon_query,
             "page_from": "1",
             "parse": True,
         },
     })
-    
-    # Reddit search
-    first_google_query = google_queries[0]
+
+    first_google_query = queries[0]
     sources.append({
         "source": "Reddit Search",
         "payload": {
@@ -64,39 +60,44 @@ def build_source_urls(niche: str) -> list[dict]:
             ),
         },
     })
-    
-    # TikTok Shop search
+
+    tiktok_query = niche
+    if "tiktok" in goal:
+        tiktok_query = f"viral {niche}"
     sources.append({
         "source": "TikTok Shop Search",
         "payload": {
             "target": "tiktok_shop_search",
-            "query": niche,
+            "query": tiktok_query,
             "parse": True,
         },
     })
-    
-    # YouTube search
+
+    youtube_query = f"viral {niche} products TikTok"
+    if data.get("problem"):
+        youtube_query = f"{niche} {data['problem']} product review"
     sources.append({
         "source": "YouTube Search",
         "payload": {
             "target": "youtube_search",
-            "query": f"viral {niche} products TikTok",
+            "query": youtube_query,
         },
     })
-    
+
     return sources
 
 
-def scrape_with_decodo(niche: str, logger=None) -> str:
+def scrape_with_decodo(niche: str, brief=None, logger=None) -> str:
     """Scrape all discovery sources for a niche using Decodo."""
-    sources = build_source_urls(niche)
+    sources = build_source_urls(niche, brief)
+
     def scrape_source(source: dict) -> dict:
         source_name = source.get("source", "Untitled Source")
         payload = source.get("payload", {})
-        
+
         if logger:
             logger.info(f"discovery:start:{source_name}:{json.dumps(payload)}")
-        
+
         result = scrape_with_decodo_payload(source_name, payload)
 
         if logger:
@@ -117,12 +118,13 @@ def scrape_with_decodo(niche: str, logger=None) -> str:
     return json.dumps(results, indent=2)
 
 
-def run_discovery(niche: str) -> dict:
-    """Run discovery and the unchanged initial ranking stage."""
-    discovery_data = scrape_with_decodo(niche)
+def run_discovery(niche: str, brief=None) -> dict:
+    """Run discovery and the initial ranking stage using the seller brief."""
+    brief_data = brief_as_dict(brief)
+    discovery_data = scrape_with_decodo(niche, brief_data)
     discovery_results = json.loads(discovery_data)
-    candidates = extract_products(discovery_results)
-    ranked_products, ai_warning = analyze_with_ai_model(niche, candidates)
+    candidates = score_products_for_brief(extract_products(discovery_results), brief_data)
+    ranked_products, ai_warning = analyze_with_ai_model(niche, candidates, brief_data)
     initial_products = ranked_products[:10]
     discovery_summary = []
     for result in discovery_results:
@@ -132,9 +134,9 @@ def run_discovery(niche: str) -> dict:
         discovery_summary.append(summary)
     return {
         "niche": niche,
+        "brief": brief_data,
         "initial_products": initial_products,
         "discovery_summary": discovery_summary,
         "discovery_data": discovery_results,
         "ranking_warnings": [ai_warning] if ai_warning else [],
     }
-

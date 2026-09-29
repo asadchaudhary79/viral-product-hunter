@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.brief import brief_as_dict
 from app.config import BACKEND_HOST, BACKEND_PORT
 from app.discovery import run_discovery
 from app.ranking import final_rank_products
@@ -31,11 +32,12 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
 
 
-def run_sourcing_and_final_ranking(niche: str, initial_products: list[dict]) -> dict:
+def run_sourcing_and_final_ranking(niche: str, initial_products: list[dict], brief=None) -> dict:
     """Source the initial top ten and run the independent final ranking stage."""
+    brief_data = brief_as_dict(brief)
     supplier_validation = validate_suppliers_for_products(initial_products[:10])
     final_products, final_warning = final_rank_products(
-        niche, initial_products[:10], supplier_validation["supplier_data"]
+        niche, initial_products[:10], supplier_validation["supplier_data"], brief_data
     )
     warnings = [final_warning] if final_warning else []
     for group in supplier_validation["supplier_data"]:
@@ -65,21 +67,26 @@ def health_check():
 
 @app.post("/discover")
 def discover_products(request: HuntRequest):
-    return run_discovery(request.niche)
+    return run_discovery(request.niche, request.brief)
 
 
 @app.post("/source")
 def source_products(request: SourceRequest):
-    return run_sourcing_and_final_ranking(request.niche, request.initial_products)
+    return run_sourcing_and_final_ranking(
+        request.niche, request.initial_products, request.brief
+    )
 
 
 @app.post("/hunt")
 def hunt_products(request: HuntRequest):
     """Run discovery, initial ranking, supplier sourcing, and final ranking."""
-    discovery = run_discovery(request.niche)
-    sourcing = run_sourcing_and_final_ranking(request.niche, discovery["initial_products"])
+    discovery = run_discovery(request.niche, request.brief)
+    sourcing = run_sourcing_and_final_ranking(
+        request.niche, discovery["initial_products"], request.brief
+    )
     return {
         "niche": request.niche,
+        "brief": brief_as_dict(request.brief),
         "message": f"Discovery, sourcing, and final ranking completed for '{request.niche}'.",
         "initial_products": discovery["initial_products"],
         "final_products": sourcing["final_products"],

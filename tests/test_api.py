@@ -389,7 +389,7 @@ class FinalRankingPipelineTests(unittest.TestCase):
         self.assertEqual(response["final_products"][0]["ranking_method"], "deterministic_fallback")
         self.assertEqual(response["final_products"][0]["selected_supplier_offer"]["candidate_index"], 0)
         self.assertEqual(set(response), {
-            "niche", "message", "initial_products", "final_products", "supplier_summary",
+            "niche", "brief", "message", "initial_products", "final_products", "supplier_summary",
             "supplier_data", "discovery_summary", "discovery_data", "ranking_warnings",
         })
 

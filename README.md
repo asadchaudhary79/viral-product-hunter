@@ -6,6 +6,8 @@ Stack: **FastAPI** backend + **custom web UI** (HTML/CSS/JS). No Streamlit.
 
 ![Viral Product Hunter UI](docs/app-screenshot.png)
 
+Stitch design project: [Viral Product Hunter](https://stitch.withgoogle.com/projects/17360665636301376568) (Visual Hunt Studio theme).
+
 ## Layout
 
 ```text
@@ -68,7 +70,7 @@ python -m app.api
 - UI: [http://127.0.0.1:8000](http://127.0.0.1:8000)
 - API docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-Enter a niche, click **Hunt products**, wait for discovery then supplier sourcing, then use **Export CSV** to download every result section.
+Fill the **hunt brief** first: niche, selling goal, max retail price, audience, problem to solve, preferences, and avoid list. That brief shapes discovery queries and ranking. Then click **Hunt products for my brief**. Use **Export CSV** after results load.
 
 ## Endpoints
 

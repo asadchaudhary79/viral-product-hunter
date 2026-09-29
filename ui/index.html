@@ -7,43 +7,175 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
     <div class="atmosphere" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <a class="topbar-brand" href="#top">
+        <span class="brand-dot" aria-hidden="true"></span>
+        Viral Product Hunter
+      </a>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost is-hidden" id="export-btn" type="button">
+          Export CSV
+        </button>
+        <a class="btn btn-primary btn-compact" href="#hunt-form">New hunt</a>
+      </div>
+    </header>
+
     <main class="shell">
       <section class="hero" id="top">
+        <p class="signal">
+          <span class="signal-dot" aria-hidden="true"></span>
+          Marketplace + supplier hunt engine
+        </p>
         <p class="brand">Viral Product Hunter</p>
-        <h1>Find products worth selling before the feed moves on.</h1>
+        <h1>Tell us what you want to sell. We hunt products that fit.</h1>
         <p class="lede">
-          Hunt a niche across marketplaces, rank viral signal, then check Alibaba
-          and AliExpress cost before you commit.
+          Answer a short brief first. Your goal, budget, and audience shape
+          searches across Google, Amazon, TikTok Shop, Reddit, and YouTube —
+          then we check Alibaba and AliExpress cost.
         </p>
 
-        <form class="hunt-form" id="hunt-form">
-          <label class="field">
-            <span>Product niche</span>
-            <input
-              id="niche"
-              name="niche"
-              type="text"
-              value="pet gadgets"
-              autocomplete="off"
-              required
-            />
-          </label>
-          <div class="actions">
-            <button class="btn btn-primary" id="hunt-btn" type="submit">
-              Hunt products
-            </button>
-            <button class="btn btn-ghost is-hidden" id="export-btn" type="button">
-              Export CSV
-            </button>
-          </div>
-        </form>
+        <div class="workspace">
+          <form class="hunt-form frosted-panel" id="hunt-form">
+            <div class="brief-head">
+              <div class="brief-title">
+                <span class="brand-dot" aria-hidden="true"></span>
+                <span>Step 1 · Your hunt brief</span>
+              </div>
+              <span class="tag">Algorithmic targeting</span>
+            </div>
+
+            <label class="field">
+              <span>Niche or category</span>
+              <div class="input-shell">
+                <span class="material-symbols-outlined input-icon" aria-hidden="true">travel_explore</span>
+                <input
+                  id="niche"
+                  name="niche"
+                  type="text"
+                  placeholder="e.g. pet gadgets, kitchen tools, car organizers"
+                  value="pet gadgets"
+                  autocomplete="off"
+                  required
+                />
+              </div>
+            </label>
+
+            <fieldset class="choice-group">
+              <legend>Where do you want to sell?</legend>
+              <div class="choice-row" id="goal-choices" role="radiogroup" aria-label="Selling goal">
+                <button type="button" class="choice is-active" data-group="goal" data-value="dropshipping">Dropshipping</button>
+                <button type="button" class="choice" data-group="goal" data-value="tiktok shop">TikTok Shop</button>
+                <button type="button" class="choice" data-group="goal" data-value="amazon">Amazon</button>
+                <button type="button" class="choice" data-group="goal" data-value="local store">Local store</button>
+              </div>
+            </fieldset>
+
+            <fieldset class="choice-group">
+              <legend>Max retail price shoppers should pay</legend>
+              <div class="choice-row" id="price-choices" role="radiogroup" aria-label="Price budget">
+                <button type="button" class="choice" data-group="price" data-value="25">Under $25</button>
+                <button type="button" class="choice is-active" data-group="price" data-value="50">Under $50</button>
+                <button type="button" class="choice" data-group="price" data-value="100">Under $100</button>
+                <button type="button" class="choice" data-group="price" data-value="">Any price</button>
+              </div>
+            </fieldset>
+
+            <div class="field-grid">
+              <label class="field">
+                <span>Who is the buyer?</span>
+                <input
+                  id="audience"
+                  name="audience"
+                  type="text"
+                  placeholder="Busy pet parents, students, new moms…"
+                  autocomplete="off"
+                />
+              </label>
+              <label class="field">
+                <span>What problem should the product solve?</span>
+                <input
+                  id="problem"
+                  name="problem"
+                  type="text"
+                  placeholder="Messy fur, cable clutter, slow mornings…"
+                  autocomplete="off"
+                />
+              </label>
+            </div>
+
+            <fieldset class="choice-group">
+              <legend>Prefer products that are</legend>
+              <div class="choice-row" id="prefer-choices">
+                <button type="button" class="choice is-active" data-group="prefer" data-value="lightweight" data-multi="true">Lightweight</button>
+                <button type="button" class="choice is-active" data-group="prefer" data-value="easy to ship" data-multi="true">Easy to ship</button>
+                <button type="button" class="choice is-active" data-group="prefer" data-value="video demo" data-multi="true">Great on video</button>
+                <button type="button" class="choice" data-group="prefer" data-value="evergreen" data-multi="true">Year-round demand</button>
+              </div>
+            </fieldset>
+
+            <fieldset class="choice-group">
+              <legend>Skip products that are</legend>
+              <div class="choice-row" id="avoid-choices">
+                <button type="button" class="choice is-active" data-group="avoid" data-value="fragile" data-multi="true">Fragile</button>
+                <button type="button" class="choice is-active" data-group="avoid" data-value="liquid" data-multi="true">Liquid</button>
+                <button type="button" class="choice is-active" data-group="avoid" data-value="branded" data-multi="true">Branded / trademark risk</button>
+                <button type="button" class="choice" data-group="avoid" data-value="electronics" data-multi="true">Complex electronics</button>
+              </div>
+            </fieldset>
+
+            <div class="brief-summary-bar">
+              <span class="live-pill">Live query</span>
+              <p class="brief-summary" id="brief-summary">
+                Hunting <strong>pet gadgets</strong> for <strong>dropshipping</strong>,
+                under <strong>$50</strong>.
+              </p>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-primary" id="hunt-btn" type="submit">
+                Hunt products for my brief
+                <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+              </button>
+            </div>
+          </form>
+
+          <aside class="side-rail frosted-panel">
+            <p class="rail-kicker">What happens next</p>
+            <ol class="rail-steps">
+              <li>
+                <strong>Discover</strong>
+                <span>Scrape niche sources matched to your goal and budget.</span>
+              </li>
+              <li>
+                <strong>Rank</strong>
+                <span>Score viral fit against your audience and avoid list.</span>
+              </li>
+              <li>
+                <strong>Source</strong>
+                <span>Check Alibaba and AliExpress cost, MOQ, and shipping.</span>
+              </li>
+              <li>
+                <strong>Export</strong>
+                <span>Download every section as CSV when the hunt finishes.</span>
+              </li>
+            </ol>
+            <div class="rail-note">
+              Typical full hunt: about 4–8 minutes depending on marketplace speed.
+            </div>
+          </aside>
+        </div>
 
         <div class="status is-hidden" id="status">
           <div class="status-track" aria-hidden="true">
@@ -52,7 +184,7 @@
           <div>
             <p class="status-label" id="status-label">Discovering products…</p>
             <p class="status-detail" id="status-detail">
-              Scraping and normalizing discovery sources
+              Scraping sources matched to your brief
             </p>
           </div>
         </div>
@@ -60,12 +192,13 @@
       </section>
 
       <section class="results is-hidden" id="results">
+        <div class="brief-result" id="brief-result"></div>
         <div class="warnings" id="warnings"></div>
 
-        <section class="panel reveal">
+        <section class="panel reveal frosted-panel">
           <div class="panel-head">
             <h2>Initial viral ranking</h2>
-            <p>Top candidates from discovery sources.</p>
+            <p>Top candidates matched to your brief.</p>
           </div>
           <div class="table-wrap">
             <table>
@@ -84,7 +217,7 @@
           </div>
         </section>
 
-        <section class="panel reveal">
+        <section class="panel reveal frosted-panel">
           <div class="panel-head">
             <h2>Supplier sourcing</h2>
             <p>Alibaba and AliExpress offers for the ranked shortlist.</p>
@@ -93,10 +226,10 @@
           <div class="supplier-list" id="supplier-list"></div>
         </section>
 
-        <section class="panel reveal">
+        <section class="panel reveal frosted-panel">
           <div class="panel-head">
             <h2>Final supplier-aware ranking</h2>
-            <p>Cost, MOQ, and availability folded into the score.</p>
+            <p>Cost, MOQ, and availability folded into your brief.</p>
           </div>
           <div class="table-wrap">
             <table>
@@ -117,7 +250,7 @@
           </div>
         </section>
 
-        <details class="panel reveal discovery">
+        <details class="panel reveal discovery frosted-panel">
           <summary>
             <span>Discovery source details</span>
             <span class="hint">Expand</span>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Viral Product Hunter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="atmosphere" aria-hidden="true"></div>
+    <main class="shell">
+      <section class="hero" id="top">
+        <p class="brand">Viral Product Hunter</p>
+        <h1>Find products worth selling before the feed moves on.</h1>
+        <p class="lede">
+          Hunt a niche across marketplaces, rank viral signal, then check Alibaba
+          and AliExpress cost before you commit.
+        </p>
+
+        <form class="hunt-form" id="hunt-form">
+          <label class="field">
+            <span>Product niche</span>
+            <input
+              id="niche"
+              name="niche"
+              type="text"
+              value="pet gadgets"
+              autocomplete="off"
+              required
+            />
+          </label>
+          <div class="actions">
+            <button class="btn btn-primary" id="hunt-btn" type="submit">
+              Hunt products
+            </button>
+            <button class="btn btn-ghost is-hidden" id="export-btn" type="button">
+              Export CSV
+            </button>
+          </div>
+        </form>
+
+        <div class="status is-hidden" id="status">
+          <div class="status-track" aria-hidden="true">
+            <span class="status-pulse"></span>
+          </div>
+          <div>
+            <p class="status-label" id="status-label">Discovering products…</p>
+            <p class="status-detail" id="status-detail">
+              Scraping and normalizing discovery sources
+            </p>
+          </div>
+        </div>
+        <p class="error is-hidden" id="error"></p>
+      </section>
+
+      <section class="results is-hidden" id="results">
+        <div class="warnings" id="warnings"></div>
+
+        <section class="panel reveal">
+          <div class="panel-head">
+            <h2>Initial viral ranking</h2>
+            <p>Top candidates from discovery sources.</p>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Product</th>
+                  <th>Viral</th>
+                  <th>Retail</th>
+                  <th>Source</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="initial-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel reveal">
+          <div class="panel-head">
+            <h2>Supplier sourcing</h2>
+            <p>Alibaba and AliExpress offers for the ranked shortlist.</p>
+          </div>
+          <div class="metrics" id="supplier-metrics"></div>
+          <div class="supplier-list" id="supplier-list"></div>
+        </section>
+
+        <section class="panel reveal">
+          <div class="panel-head">
+            <h2>Final supplier-aware ranking</h2>
+            <p>Cost, MOQ, and availability folded into the score.</p>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Product</th>
+                  <th>Final</th>
+                  <th>Supplier</th>
+                  <th>Cost USD</th>
+                  <th>MOQ</th>
+                  <th>Notes</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="final-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <details class="panel reveal discovery">
+          <summary>
+            <span>Discovery source details</span>
+            <span class="hint">Expand</span>
+          </summary>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Results</th>
+                  <th>Status</th>
+                  <th>Preview</th>
+                  <th>Issue</th>
+                </tr>
+              </thead>
+              <tbody id="discovery-body"></tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

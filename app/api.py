@@ -1,16 +1,22 @@
-"""FastAPI backend for the Viral Product Hunter app.
+"""FastAPI backend and UI for the Viral Product Hunter app.
 
-Runs on port 8000 and exposes endpoints for the Streamlit frontend.
+Runs on port 8000, serves the web UI, and exposes JSON endpoints.
 """
+from pathlib import Path
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.config import BACKEND_HOST, BACKEND_PORT
 from app.discovery import run_discovery
 from app.ranking import final_rank_products
 from app.schemas import HuntRequest, SourceRequest
 from app.suppliers import validate_suppliers_for_products
+
+UI_DIR = Path(__file__).resolve().parent.parent / "ui"
 
 app = FastAPI(title="Viral Product Hunter API")
 
@@ -21,6 +27,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
 
 
 def run_sourcing_and_final_ranking(niche: str, initial_products: list[dict]) -> dict:
@@ -43,6 +51,11 @@ def run_sourcing_and_final_ranking(niche: str, initial_products: list[dict]) -> 
         "supplier_data": supplier_validation["supplier_data"],
         "ranking_warnings": warnings,
     }
+
+
+@app.get("/")
+def serve_ui():
+    return FileResponse(UI_DIR / "index.html")
 
 
 @app.get("/health")
